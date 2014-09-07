@@ -48,6 +48,7 @@
   <ItemGroup>
      <Compile Include="Assets\Scripts\Dry.cs" />
      <Compile Include="Assets\Scripts\Slippery.cs" />
+     <Compile Include="Assets\Scripts\SoftBodyCreator.cs" />
      <Compile Include="Assets\Scripts\StartButton.cs" />
      <Compile Include="Assets\Scripts\speedUp.cs" />
   </ItemGroup>
