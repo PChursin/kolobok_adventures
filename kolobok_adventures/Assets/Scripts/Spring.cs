@@ -29,13 +29,14 @@ public class Spring : MonoBehaviour
 
 		if (other != null) {		
 			float l = (this.transform.position - other.transform.position).magnitude;
+			float dl = l - distance;
 
 			Vector2 force = this.transform.position - other.transform.position;
 			force.Normalize ();
-			float forceModule = -k * (l - distance); 
+			float forceModule = - dl * Mathf.Pow(k, (Math.Abs (dl) / distance + 1)); 
 
-			float Fthis = Mathf.Abs(l - distance) * this.rigidbody2D.mass / delta / delta;
-			float Fother = Mathf.Abs(l - distance) * other.mass / delta / delta;
+			float Fthis = Mathf.Abs(dl) * this.rigidbody2D.mass / delta / delta;
+			float Fother = Mathf.Abs(dl) * other.mass / delta / delta;
 
 			if(Math.Abs(forceModule) > Fthis) Fthis *= Math.Sign(forceModule);
 			else Fthis = forceModule;
