@@ -14,6 +14,8 @@ public class Spring : MonoBehaviour
 {
 	public float distance = 1;
 	public float k = 10f; //Жесткость
+	public bool affectConnected = true;
+	float bufferLenght = 0.1f;
 	
 	private Rigidbody2D other;
 	public Rigidbody2D connectedBody {
@@ -29,24 +31,33 @@ public class Spring : MonoBehaviour
 
 		if (other != null) {		
 			float l = (this.transform.position - other.transform.position).magnitude;
-			float dl = l - distance;
+			float dl = (distance - l);
+
+
+			/*
+			if(Math.Abs(dl) <= bufferLenght) return;
+			dl -= bufferLenght * Math.Sign(dl);
+			*/
 
 			Vector2 force = this.transform.position - other.transform.position;
 			force.Normalize ();
-			float forceModule = - dl * Mathf.Pow(k, (Math.Abs (dl) / distance + 1)); 
+			float forceModule = Math.Abs(dl) * Mathf.Pow (k, (1 + Math.Abs (dl)/distance)); 
 
-			float Fthis = Mathf.Abs(dl) * this.rigidbody2D.mass / delta / delta;
-			float Fother = Mathf.Abs(dl) * other.mass / delta / delta;
+			float FmaxThis  = 0.9f * Math.Abs(dl) * this.rigidbody2D.mass / (delta * delta);
+			float FmaxOther = 0.9f * Math.Abs(dl) * other.mass / (delta * delta);
 
-			if(Math.Abs(forceModule) > Fthis) Fthis *= Math.Sign(forceModule);
-			else Fthis = forceModule;
-			if(Math.Abs(forceModule) > Fother) Fother *= Math.Sign(forceModule);
-			else Fother = forceModule;
+			//Debug.Log(forceModule - FmaxOther);
+
+			if(forceModule < FmaxThis) FmaxThis = forceModule;
+			if(forceModule < FmaxOther) FmaxOther = forceModule;
 			//Убираем раскачивания из-за дискретного шага: 
 
-			this.rigidbody2D.AddForce (force * Fthis);
-			other.AddForce (-force * Fother);
+			this.rigidbody2D.AddForce (force * Math.Sign(dl) * FmaxThis);
+			if(affectConnected) other.AddForce (-force * Math.Sign(dl) * FmaxOther);
 		}
+	}
+
+	public void Update() {
 	}
 }
 
