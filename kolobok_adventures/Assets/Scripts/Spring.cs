@@ -15,9 +15,11 @@ public class Spring : MonoBehaviour
 	public float distance = 1;
 	public float k = 10f; //Жесткость
 	public bool affectConnected = true;
-	float bufferLenght = 0.1f;
+	float dd = 0.1f; //[0, 1], изменение на такую долю от общей длины не вызывает силу противодействия
 	
 	private Rigidbody2D other;
+	private Vector3 anchor = new Vector3();
+	
 	public Rigidbody2D connectedBody {
 		get{return other;}
 		set{
@@ -25,35 +27,52 @@ public class Spring : MonoBehaviour
 			distance = (this.transform.position - other.transform.position).magnitude;
 		}
 	}
+	
+	public Vector3 anchorPosition {
+		set{
+			anchor = value;
+			distance = (this.transform.position - anchor).magnitude;
+		}
+		get{return anchor;}
+	}
 
 	public void FixedUpdate() {
 		float delta = Time.smoothDeltaTime;
 
+		float l;
+		float dl;
+		Vector2 force;
+
 		if (other != null) {		
-			float l = (this.transform.position - other.transform.position).magnitude;
-			float dl = (distance - l);
-
-
-			/*
-			if(Math.Abs(dl) <= bufferLenght) return;
-			dl -= bufferLenght * Math.Sign(dl);
-			*/
-
-			Vector2 force = this.transform.position - other.transform.position;
+			l = (this.transform.position - other.transform.position).magnitude;
+			dl = (distance - l);
+	
+			force = this.transform.position - other.transform.position;
 			force.Normalize ();
-			float forceModule = Math.Abs(dl) * Mathf.Pow (k, (1 + Math.Abs (dl)/distance)); 
+		} else {
+			l = (this.transform.position - anchor).magnitude;
+			dl = (distance - l);
+			
+			force = this.transform.position - anchor;
+			force.Normalize ();
+		}
 
-			float FmaxThis  = 0.9f * Math.Abs(dl) * this.rigidbody2D.mass / (delta * delta);
+		/*
+		if(Math.Abs(dl) <= dd * distance) return;
+		dl *= (1 - dd);
+		*/
+
+		//Убираем раскачивания из-за дискретного шага: 
+		float forceModule = Math.Abs(dl) * Mathf.Pow (k, (1 + Math.Abs (dl)/distance)); 
+		float FmaxThis = 0.9f * Math.Abs(dl) * this.rigidbody2D.mass / (delta * delta);
+
+		if(forceModule < FmaxThis) FmaxThis = forceModule;			
+		this.rigidbody2D.AddForce (force * Math.Sign(dl) * FmaxThis);
+
+		if (affectConnected && other != null) {
 			float FmaxOther = 0.9f * Math.Abs(dl) * other.mass / (delta * delta);
-
-			//Debug.Log(forceModule - FmaxOther);
-
-			if(forceModule < FmaxThis) FmaxThis = forceModule;
 			if(forceModule < FmaxOther) FmaxOther = forceModule;
-			//Убираем раскачивания из-за дискретного шага: 
-
-			this.rigidbody2D.AddForce (force * Math.Sign(dl) * FmaxThis);
-			if(affectConnected) other.AddForce (-force * Math.Sign(dl) * FmaxOther);
+			other.AddForce (-force * Math.Sign (dl) * FmaxOther);
 		}
 	}
 

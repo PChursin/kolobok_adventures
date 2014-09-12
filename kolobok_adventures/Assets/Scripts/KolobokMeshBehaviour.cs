@@ -13,28 +13,25 @@ public class KolobokMeshBehaviour : MonoBehaviour
 	void initialize() {
 		kolobokMesh = GameObject.Find ("KOLOBOK_MESH").GetComponent<MeshFilter> ();
 		kolobokCenter = GameObject.Find ("KOLOBOK_CENTER");
+		
 		data = kolobokMesh.GetComponent<DataStorage> ();
-
-
 		shellPoints = (GameObject[]) data.GetEntry("spheres");
 
 		ready = true;
 	}
 
-	void LateUpdate() {
+	void Update() {
 		if (!ready) initialize ();
 
 		updateMesh ();
 	}
 
 	void updateMesh () {
-
 		Mesh mesh = kolobokMesh.sharedMesh;
 		
 		Vector3[] verticies = new Vector3[mesh.vertices.Length];
-
-
 		verticies [0] = new Vector3();
+		
 		int n = shellPoints.Length;
 		for(int i = 0; i < n; i++) {
 			verticies [3 * i + 2] = shellPoints[i].transform.localPosition - kolobokCenter.transform.localPosition;

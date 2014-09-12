@@ -4,10 +4,36 @@ using System.Collections.Generic;
 using UnityEditor.VersionControl;
 
 public class KolobokBehaviour : MonoBehaviour {
-	public GameObject[] spheres;
 	GameObject center;
+	GameObject[] spheres;
+		
+	DistanceJoint2D[] radialJoints;
+	DistanceJoint2D[] shellJoints;
+	Spring[] radialSprings;	
+	Spring[] shellSprings;
 	int num = 20;
 	float density = 1000;
+	
+	const float minRadius = 0.5f;
+	const float maxRadius = 2f;
+	const float deltaR = 0.03f;
+	float Radius = 1;
+	public float R
+	{
+		set{ 
+			if(value < minRadius || value > maxRadius) return;
+			Radius = value;
+			float h = calculateShellDistance();
+			for(int i = 0; i < num; i++) {
+				radialJoints[i].distance = Radius;
+				radialSprings[i].distance = Radius;
+				shellJoints[i].distance = h;
+				shellSprings[i].distance = h;
+			}			
+		}
+		get{return Radius;}
+	}
+	
 	
 	void Start () {		
 		center = GameObject.CreatePrimitive (PrimitiveType.Sphere);
@@ -44,10 +70,12 @@ public class KolobokBehaviour : MonoBehaviour {
 		Vector2[] uv        = new Vector2[3 * num];
 		verticies [0] = new Vector3 ();
 		spheres = new GameObject[num];
+		radialJoints = new DistanceJoint2D[num];
+		radialSprings = new Spring[num];
 
 		float delta = Mathf.PI * 2 / num;
 		float angle = 0;
-		float R = 1;
+		
 		for(int n = 0; n < num; n++) {
 			GameObject g = GameObject.CreatePrimitive(PrimitiveType.Sphere);
 			g.transform.position = new Vector3(R * Mathf.Cos(angle), R * Mathf.Sin(angle), 0)
@@ -72,18 +100,16 @@ public class KolobokBehaviour : MonoBehaviour {
 			Rigidbody2D body = g.AddComponent<Rigidbody2D>();
 			body.mass = 1f;				
 
-
-			DistanceJoint2D distanceJoint = g.AddComponent<DistanceJoint2D>();
-			distanceJoint.maxDistanceOnly = true;
-			distanceJoint.connectedBody = cBody;
-			distanceJoint.distance = R;
-
-			Spring s = g.AddComponent<Spring>();
-			s.connectedBody = cBody;
-			s.k = density;
-			s.distance = R;		
-			//s.affectConnected = false;
-
+			radialJoints[n] = g.AddComponent<DistanceJoint2D>();
+			radialJoints[n].maxDistanceOnly = true;
+			radialJoints[n].connectedBody = cBody;
+			radialJoints[n].distance = R;
+			
+			radialSprings[n] = g.AddComponent<Spring>();
+			radialSprings[n].connectedBody = cBody;
+			radialSprings[n].k = density;
+			radialSprings[n].distance = R;		
+			
 			CircleCollider2D cc = g.AddComponent<CircleCollider2D>();
 			cc.sharedMaterial = Resources.Load<PhysicsMaterial2D>("Materials/KolobokMat");
 
@@ -97,7 +123,11 @@ public class KolobokBehaviour : MonoBehaviour {
 		storage.AddEntry ("count", num);
 		storage.AddEntry ("spheres", spheres);
 
-		float h = Mathf.Sqrt(2 * R * R * (1 - Mathf.Cos (delta)))*0.99f;
+
+		shellJoints = new DistanceJoint2D[num];
+		shellSprings = new Spring[num];
+
+		float h = calculateShellDistance();
 		angle = 0;
 		for (int i = 0; i < num; i++) {
 			triangles[3 * i + 0] = 3 * i; // center
@@ -116,19 +146,18 @@ public class KolobokBehaviour : MonoBehaviour {
 			dHingeJoint.useLimits = true;
 			dHingeJoint.connectedBody = spheres[i].GetComponent<Rigidbody2D>();
 
-
-			var connection = spheres[i].AddComponent<Spring>();
-			connection.connectedBody = spheres[(i - 1 + num) % num]
+			
+			shellSprings[i] = spheres[i].AddComponent<Spring>();
+			shellSprings[i].connectedBody = spheres[(i - 1 + num) % num]
 										.GetComponent<Rigidbody2D>();
-			connection.distance = h;	
-			connection.k = density;
-
-
-			DistanceJoint2D distanceJoint = spheres[i].AddComponent<DistanceJoint2D>();
-			distanceJoint.connectedBody = spheres[(i - 1 + num) % num]
+			shellSprings[i].distance = h;	
+			shellSprings[i].k = density;
+			
+			shellJoints[i] = spheres[i].AddComponent<DistanceJoint2D>();
+			shellJoints[i].connectedBody = spheres[(i - 1 + num) % num]
 											.GetComponent<Rigidbody2D>();
-			distanceJoint.distance = h;	
-			distanceJoint.maxDistanceOnly = true;
+			shellJoints[i].distance = h;	
+			shellJoints[i].maxDistanceOnly = true;
 
 
 			angle += delta;
@@ -141,5 +170,20 @@ public class KolobokBehaviour : MonoBehaviour {
 		mesh.RecalculateNormals();
 		mesh.RecalculateBounds();
 		mesh.Optimize();
+	}
+	
+	float calculateShellDistance () 
+	{
+		float delta = Mathf.PI * 2 / num;
+		return Mathf.Sqrt(2 * R * R * (1 - Mathf.Cos (delta)))*0.99f;
+	}
+	
+	void Update() {
+		if(Input.GetKey(KeyCode.UpArrow)) {
+			R = R + deltaR;
+		}
+		if(Input.GetKey(KeyCode.DownArrow)) {
+			R = R - deltaR;
+		}		
 	}
 }
