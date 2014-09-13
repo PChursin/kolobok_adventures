@@ -35,18 +35,20 @@ public class KolobokBehaviour : MonoBehaviour {
 	}
 	
 	
-	void Start () {		
+	void Start () {			
 		center = GameObject.CreatePrimitive (PrimitiveType.Sphere);
 		center.transform.parent = this.transform;
 		center.transform.localPosition = new Vector3 ();
 		center.transform.localScale = new Vector3 (0.2f, 0.2f, 1);
 		center.name = "KOLOBOK_CENTER";
-
+		
 		Component.DestroyImmediate (center.GetComponent<SphereCollider> ());
 		Component.DestroyImmediate (center.GetComponent<MeshRenderer> ());
 
 		Rigidbody2D cBody = center.AddComponent<Rigidbody2D> ();
 		cBody.mass = 1f;
+		
+		GameObject.Find("Main Camera").GetComponent<TrackingCam>().target = center.transform;
 
 		var meshHolder = new GameObject ();
 		meshHolder.name = "KOLOBOK_MESH";	

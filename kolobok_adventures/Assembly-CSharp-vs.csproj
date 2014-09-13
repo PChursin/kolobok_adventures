@@ -53,6 +53,7 @@
      <Compile Include="Assets\Scripts\Slippery.cs" />
      <Compile Include="Assets\Scripts\Spring.cs" />
      <Compile Include="Assets\Scripts\StartButton.cs" />
+     <Compile Include="Assets\Scripts\TrackingCam.cs" />
      <Compile Include="Assets\Scripts\speedUp.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
