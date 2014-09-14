@@ -11,8 +11,11 @@ public class KolobokBehaviour : MonoBehaviour {
 	DistanceJoint2D[] shellJoints;
 	Spring[] radialSprings;	
 	Spring[] shellSprings;
+	// число вершин оболочки
 	int num = 20;
 	float density = 1000;
+	
+	bool isRigid = false;
 	
 	const float minRadius = 0.5f;
 	const float maxRadius = 2f;
@@ -42,14 +45,22 @@ public class KolobokBehaviour : MonoBehaviour {
 		center.transform.localScale = new Vector3 (0.2f, 0.2f, 1);
 		center.name = "KOLOBOK_CENTER";
 		
+		//Добавляем слежение камеры за колобком
+		GameObject.Find("Main Camera").GetComponent<TrackingCam>().target = center.transform;
+		
 		Component.DestroyImmediate (center.GetComponent<SphereCollider> ());
 		Component.DestroyImmediate (center.GetComponent<MeshRenderer> ());
-
+		
+		//Создаем, но уменьшаем радиус, чтобы не мешался, используем когда колобок будет "жестким"
+		var c = center.AddComponent<CircleCollider2D>();
+		c.radius = 0.2f;
+		c.sharedMaterial = Resources.Load<PhysicsMaterial2D>("Materials/KolobokMat");
+		
+		
 		Rigidbody2D cBody = center.AddComponent<Rigidbody2D> ();
 		cBody.mass = 1f;
-		
-		GameObject.Find("Main Camera").GetComponent<TrackingCam>().target = center.transform;
 
+		//Создаем объект, хранящий в себе меш, на который натягивается текстура
 		var meshHolder = new GameObject ();
 		meshHolder.name = "KOLOBOK_MESH";	
 		meshHolder.transform.parent = center.transform;
@@ -87,10 +98,10 @@ public class KolobokBehaviour : MonoBehaviour {
 			Component.DestroyImmediate (g.GetComponent<MeshRenderer>());
 			Component.DestroyImmediate (g.GetComponent<SphereCollider>());
 
-			//сохраним номер шарика чтобы обновлять меш потом
+			//сохраним номер шарика для удобства
 			g.name = "KOLOBOK_" + n.ToString();
 
-			//Creating Mesh
+			//Задание вершин меша и соответствующей точки текстуры
 			verticies[3 * n + 1] = new Vector3();
 			verticies[3 * n + 2] = new Vector3(R * Mathf.Cos(angle), R * Mathf.Sin(angle), 0);
 			verticies[(3 * n + 3)%(3 * num)] = new Vector3(R * Mathf.Cos(angle), R * Mathf.Sin(angle), 0);
@@ -100,7 +111,7 @@ public class KolobokBehaviour : MonoBehaviour {
 			uv[(3 * n + 3)%(3 * num)] = new Vector2(0.5f + Mathf.Cos(angle) / 2, 0.5f + Mathf.Sin(angle) / 2);		
 
 			Rigidbody2D body = g.AddComponent<Rigidbody2D>();
-			body.mass = 1f;				
+			body.mass = 1f;
 
 			radialJoints[n] = g.AddComponent<DistanceJoint2D>();
 			radialJoints[n].maxDistanceOnly = true;
@@ -111,9 +122,10 @@ public class KolobokBehaviour : MonoBehaviour {
 			radialSprings[n].connectedBody = cBody;
 			radialSprings[n].k = density;
 			radialSprings[n].distance = R;		
-			
+						
 			CircleCollider2D cc = g.AddComponent<CircleCollider2D>();
 			cc.sharedMaterial = Resources.Load<PhysicsMaterial2D>("Materials/KolobokMat");
+			cc.radius = 0.01f;
 
 			spheres[n] = g;
 		
@@ -125,29 +137,31 @@ public class KolobokBehaviour : MonoBehaviour {
 		storage.AddEntry ("count", num);
 		storage.AddEntry ("spheres", spheres);
 
-
 		shellJoints = new DistanceJoint2D[num];
 		shellSprings = new Spring[num];
 
 		float h = calculateShellDistance();
 		angle = 0;
 		for (int i = 0; i < num; i++) {
-			triangles[3 * i + 0] = 3 * i; // center
-			triangles[3 * i + 1] = 3 * i + 1;
+			triangles[3 * i + 0] = 3 * i;      // это всегда центральная вершина
+			triangles[3 * i + 1] = 3 * i + 1; 
 			triangles[3 * i + 2] = 3 * i + 2;
 
+			// болванчик нулевой массы подвешивается к каждой вершине оболочки, 
+			// чтобы наш колобок вращался, а не скользил. Похоже на какой-то баг юнити, может можно сделать лучше
+			
 			GameObject dummy = new GameObject();
 			dummy.transform.parent = spheres[i].transform;
 
 			dummy.transform.localPosition = new Vector3();
 			var dBody = dummy.AddComponent<Rigidbody2D>();
-			dBody.mass = 0;
+			dBody.mass = 0f;
 		
 
 			var dHingeJoint = dummy.AddComponent<HingeJoint2D>();
 			dHingeJoint.useLimits = true;
 			dHingeJoint.connectedBody = spheres[i].GetComponent<Rigidbody2D>();
-
+			
 			
 			shellSprings[i] = spheres[i].AddComponent<Spring>();
 			shellSprings[i].connectedBody = spheres[(i - 1 + num) % num]
@@ -160,7 +174,6 @@ public class KolobokBehaviour : MonoBehaviour {
 											.GetComponent<Rigidbody2D>();
 			shellJoints[i].distance = h;	
 			shellJoints[i].maxDistanceOnly = true;
-
 
 			angle += delta;
 		}
@@ -180,6 +193,25 @@ public class KolobokBehaviour : MonoBehaviour {
 		return Mathf.Sqrt(2 * R * R * (1 - Mathf.Cos (delta)))*0.99f;
 	}
 	
+	void toggleRigid() {
+		isRigid = !isRigid;
+		for(int i = 0; i < num; i++) {
+			shellJoints[i].maxDistanceOnly = !isRigid;
+			radialJoints[i].maxDistanceOnly = !isRigid;
+		}
+		var cc = center.GetComponent<CircleCollider2D>();
+		
+		if(isRigid) {
+			center.transform.eulerAngles = new Vector3();
+			center.GetComponent<Rigidbody2D>().fixedAngle = false;
+		} else {
+			center.GetComponent<Rigidbody2D>().fixedAngle = true;
+		}
+		var scale = Mathf.Min(new float[] {center.transform.localScale.x, center.transform.localScale.y, 1});
+		if(scale == 0f) scale = 1f;
+		cc.radius = (isRigid)? (R + 0.01f) / scale : 0f;		
+	}
+	
 	void Update() {
 		if(Input.GetKey(KeyCode.UpArrow)) {
 			R = R + deltaR;
@@ -187,5 +219,8 @@ public class KolobokBehaviour : MonoBehaviour {
 		if(Input.GetKey(KeyCode.DownArrow)) {
 			R = R - deltaR;
 		}		
+		if(Input.GetKeyDown(KeyCode.Space)) {
+			toggleRigid();
+		}
 	}
 }

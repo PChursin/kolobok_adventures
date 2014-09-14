@@ -10,10 +10,12 @@ public class StartButton : MonoBehaviour {
 
 	void Start()
 	{
+		/*
 		GameObject k = GameObject.Find ("Kolobok");
 		k.collider2D.sharedMaterial.friction = 5;
 		k.collider2D.enabled = false;
 		k.collider2D.enabled = true;
+		*/
 		lastMouse = Input.mousePosition;
 	}
 

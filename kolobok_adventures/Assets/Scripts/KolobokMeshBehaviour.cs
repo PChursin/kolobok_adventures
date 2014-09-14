@@ -38,9 +38,11 @@ public class KolobokMeshBehaviour : MonoBehaviour
 			verticies [(3 * i + 3)%(3 * n)] = shellPoints[i].transform.localPosition - kolobokCenter.transform.localPosition;
 		}
 		mesh.vertices = verticies;
-
+		
+		/*
 		mesh.RecalculateNormals();
 		mesh.RecalculateBounds();
+		*/
 		
 		kolobokMesh.sharedMesh = mesh;
 	}
