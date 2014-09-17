@@ -46,6 +46,8 @@
 	</Reference>
   </ItemGroup>
   <ItemGroup>
+     <Compile Include="Assets\Scripts\BgParallax.cs" />
+     <Compile Include="Assets\Scripts\CameraFollow.cs" />
      <Compile Include="Assets\Scripts\DataStorage.cs" />
      <Compile Include="Assets\Scripts\Dry.cs" />
      <Compile Include="Assets\Scripts\KolobokBehaviour.cs" />

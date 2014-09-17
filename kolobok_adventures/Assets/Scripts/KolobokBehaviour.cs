@@ -16,6 +16,12 @@ public class KolobokBehaviour : MonoBehaviour {
 		center.transform.localScale = new Vector3 (0.2f, 0.2f, 1);
 		center.name = "KOLOBOK_CENTER";
 
+		// сказать камере "я родился!"
+		//GameObject.FindGameObjectWithTag("MainCamera").GetComponent("CameraFollow").initCam();
+//		GetComponent<CameraFollow>().initCam();
+		CameraFollow camScript = (CameraFollow) GameObject.FindGameObjectWithTag("MainCamera").GetComponent("CameraFollow");
+		camScript.initCam();
+
 		Component.DestroyImmediate (center.GetComponent<SphereCollider> ());
 		Component.DestroyImmediate (center.GetComponent<MeshRenderer> ());
 
