@@ -26,13 +26,7 @@ public class KolobokBehaviour : MonoBehaviour {
 		set{ 
 			if(value < minRadius || value > maxRadius) return;
 			Radius = value;
-			float h = calculateShellDistance();
-			for(int i = 0; i < num; i++) {
-				radialJoints[i].distance = Radius;
-				radialSprings[i].distance = Radius;
-				shellJoints[i].distance = h;
-				shellSprings[i].distance = h;
-			}			
+			changeR();		
 		}
 		get{return Radius;}
 	}
@@ -206,10 +200,28 @@ public class KolobokBehaviour : MonoBehaviour {
 			center.GetComponent<Rigidbody2D>().fixedAngle = false;
 		} else {
 			center.GetComponent<Rigidbody2D>().fixedAngle = true;
+		}		
+		cc.radius = calcCenterRadius();
+	}
+	
+	void changeR() {
+		float h = calculateShellDistance();
+		for(int i = 0; i < num; i++) {
+			radialJoints[i].distance = Radius;
+			radialSprings[i].distance = Radius;
+			shellJoints[i].distance = h;
+			shellSprings[i].distance = h;
+		}	
+		if(isRigid) {
+			center.GetComponent<CircleCollider2D>().radius = calcCenterRadius();
 		}
+	}
+	
+	float calcCenterRadius() {
 		var scale = Mathf.Min(new float[] {center.transform.localScale.x, center.transform.localScale.y, 1});
-		if(scale == 0f) scale = 1f;
-		cc.radius = (isRigid)? (R + 0.01f) / scale : 0f;		
+		if(scale == 0f) 
+			scale = 1f;
+		return (isRigid)? R / scale : 0f;	
 	}
 	
 	void Update() {
